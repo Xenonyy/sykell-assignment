@@ -1,6 +1,8 @@
 import { urlAnalyses } from '../../api/urlCrawl';
 import { useUrlTable } from '../../hooks/useUrlTable';
 import { messages } from '../../messages';
+import { useState } from 'react';
+import { UrlDetailsModal } from './UrlDetailsModal';
 
 const columns = [
   { key: 'url', label: 'URL', filterType: 'text', placeholder: messages.filterUrl },
@@ -19,7 +21,7 @@ const statusOptions = [
   { value: 'error', label: messages.statusError },
 ];
 
-export default function UrlDashboard() {
+export const UrlDashboard = () => {
   const {
     selectedIds,
     handleSelect,
@@ -38,6 +40,7 @@ export default function UrlDashboard() {
     paginated,
     totalPages,
   } = useUrlTable(urlAnalyses);
+  const [selectedUrl, setSelectedUrl] = useState<null | (typeof urlAnalyses)[0]>(null);
 
   return (
     <div className="min-h-screen text-gray-100">
@@ -123,11 +126,16 @@ export default function UrlDashboard() {
           </thead>
           <tbody>
             {paginated.map((u) => (
-              <tr key={u.id} className="border-t border-gray-700 hover:bg-gray-700 transition-all duration-200">
+              <tr
+                key={u.id}
+                className="border-t border-gray-700 hover:bg-gray-700 transition-all duration-200 cursor-pointer"
+                onClick={() => setSelectedUrl(u)}
+              >
                 <td className="py-2 px-4">
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(u.id)}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={(e) => handleSelect(u.id, e.target.checked)}
                   />
                 </td>
@@ -175,6 +183,7 @@ export default function UrlDashboard() {
           {messages.next}
         </button>
       </div>
+      {selectedUrl && <UrlDetailsModal url={selectedUrl} onClose={() => setSelectedUrl(null)} />}
     </div>
   );
-}
+};

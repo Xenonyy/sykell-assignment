@@ -17,4 +17,9 @@ export const messages = {
   next: 'Next',
   page: 'Page',
   of: 'of',
+  modalClose: 'Close',
+  modalBrokenLinksTitle: 'Broken Links',
+  modalNoBrokenLinks: 'No broken links found.',
+  modalInternalLinks: 'Internal Links',
+  modalExternalLinks: 'External Links',
 };

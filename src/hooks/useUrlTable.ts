@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { UrlAnalysis } from '../api/urlCrawl';
+import type { UrlAnalysis } from '../types/UrlAnalysis';
 
 export const useUrlTable = (initialAnalyses: UrlAnalysis[]) => {
   const [analyses, setAnalyses] = useState<UrlAnalysis[]>(initialAnalyses);

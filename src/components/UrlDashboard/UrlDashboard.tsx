@@ -127,7 +127,7 @@ export const UrlDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen text-gray-100">
+    <div className="min-h-screen text-gray-100 mt-20">
       <h1 className="text-2xl font-bold mb-4 text-white">{messages.dashboardTitle}</h1>
       <div className="flex gap-2 mb-4">
         <input

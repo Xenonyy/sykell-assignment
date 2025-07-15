@@ -1,6 +1,6 @@
 export const ProjectDetails = {
-  name: 'Project Name',
-  description: 'Project Description',
-  version: 'Project Version',
+  name: 'Sykell Fullstack coding challenge',
+  description: 'A fullstack coding challenge for Sykell to analyze URLs and their content.',
+  version: '0.1.0',
   year: '2025',
 };

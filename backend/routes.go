@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -61,6 +62,10 @@ func listURLs(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
 			return
 		}
+		var brokenLinks []BrokenLink
+		if u.BrokenLinks.Valid && u.BrokenLinks.String != "" {
+			_ = json.Unmarshal([]byte(u.BrokenLinks.String), &brokenLinks)
+		}
 		urls = append(urls, URLAnalysis{
 			ID:            u.ID,
 			URL:           u.URL,
@@ -70,7 +75,7 @@ func listURLs(c *gin.Context) {
 			Headings:      u.Headings.String,
 			InternalLinks: int(u.InternalLinks.Int64),
 			ExternalLinks: int(u.ExternalLinks.Int64),
-			BrokenLinks:   u.BrokenLinks.String,
+			BrokenLinks:   brokenLinks,
 			HasLoginForm:  u.HasLoginForm.Bool,
 		})
 	}
@@ -80,7 +85,7 @@ func listURLs(c *gin.Context) {
 func getURL(c *gin.Context) {
 	id := c.Param("id")
 
-	var u URLAnalysis
+	var u URLAnalysisDB
 	err := db.QueryRow(
 		`SELECT id, url, status, title, html_version, headings, internal_links, external_links, broken_links, has_login_form 
 		 FROM url_analysis WHERE id = ?`, id,
@@ -100,8 +105,22 @@ func getURL(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "URL not found"})
 		return
 	}
-
-	c.JSON(http.StatusOK, u)
+	var brokenLinks []BrokenLink
+	if u.BrokenLinks.Valid && u.BrokenLinks.String != "" {
+		_ = json.Unmarshal([]byte(u.BrokenLinks.String), &brokenLinks)
+	}
+	c.JSON(http.StatusOK, URLAnalysis{
+		ID:            u.ID,
+		URL:           u.URL,
+		Status:        u.Status,
+		HTMLVersion:   u.HTMLVersion.String,
+		Title:         u.Title.String,
+		Headings:      u.Headings.String,
+		InternalLinks: int(u.InternalLinks.Int64),
+		ExternalLinks: int(u.ExternalLinks.Int64),
+		BrokenLinks:   brokenLinks,
+		HasLoginForm:  u.HasLoginForm.Bool,
+	})
 }
 
 func startURLs(c *gin.Context) {

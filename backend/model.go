@@ -2,6 +2,11 @@ package main
 
 import "database/sql"
 
+type BrokenLink struct {
+	URL    string `json:"url"`
+	Status int    `json:"status"`
+}
+
 type URLAnalysisDB struct {
 	ID            int
 	URL           string
@@ -24,6 +29,6 @@ type URLAnalysis struct {
 	Headings      string `json:"headings"`
 	InternalLinks int    `json:"internalLinks"`
 	ExternalLinks int    `json:"externalLinks"`
-	BrokenLinks   string `json:"brokenLinks"`
+	BrokenLinks   []BrokenLink `json:"brokenLinks"`
 	HasLoginForm  bool   `json:"hasLoginForm"`
 }

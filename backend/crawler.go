@@ -14,7 +14,7 @@ func crawlURL(targetURL string) URLAnalysis {
 		return URLAnalysis{
 			URL:         targetURL,
 			Status:      "error",
-			BrokenLinks: targetURL,
+			BrokenLinks: []BrokenLink{{URL: targetURL, Status: resp.StatusCode}},
 		}
 	}
 	defer resp.Body.Close()
@@ -40,7 +40,7 @@ func crawlURL(targetURL string) URLAnalysis {
 	baseURL, _ := url.Parse(targetURL)
 	internalLinks := 0
 	externalLinks := 0
-	brokenLinks := []string{}
+	brokenLinks := []BrokenLink{}
 
 	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
 		link, _ := s.Attr("href")
@@ -58,7 +58,7 @@ func crawlURL(targetURL string) URLAnalysis {
 		absolute := baseURL.ResolveReference(linkURL)
 		status := checkLink(absolute.String())
 		if status >= 400 {
-			brokenLinks = append(brokenLinks, absolute.String())
+			brokenLinks = append(brokenLinks, BrokenLink{URL: absolute.String(), Status: status})
 		}
 	})
 
@@ -76,7 +76,7 @@ func crawlURL(targetURL string) URLAnalysis {
 		Headings:      headingSummary,
 		InternalLinks: internalLinks,
 		ExternalLinks: externalLinks,
-		BrokenLinks:   strings.Join(brokenLinks, ","),
+		BrokenLinks:   brokenLinks,
 		HasLoginForm:  hasLogin,
 		Status:        "done",
 	}

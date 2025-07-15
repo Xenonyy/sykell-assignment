@@ -1,8 +1,10 @@
-import { urlAnalyses } from '../../api/urlCrawl';
 import { useUrlTable } from '../../hooks/useUrlTable';
 import { messages } from '../../messages';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UrlDetailsModal } from './UrlDetailsModal';
+import type { UrlAnalysis } from '../../types/UrlAnalysis';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useFetchUrls } from '../../hooks/useFetchUrls';
 
 const columns = [
   { key: 'url', label: 'URL', filterType: 'text', placeholder: messages.filterUrl },
@@ -22,13 +24,14 @@ const statusOptions = [
 ];
 
 export const UrlDashboard = () => {
+  const queryClient = useQueryClient();
+
+  const { data: urls, isLoading, isError } = useFetchUrls();
+  console.log(urls, isError, isLoading);
+
   const {
     selectedIds,
     handleSelect,
-    handleStart,
-    handleStop,
-    search,
-    setSearch,
     sortKey,
     setSortKey,
     sortAsc,
@@ -39,70 +42,94 @@ export const UrlDashboard = () => {
     setFilters,
     paginated,
     totalPages,
-  } = useUrlTable(urlAnalyses);
-  const [selectedUrl, setSelectedUrl] = useState<null | (typeof urlAnalyses)[0]>(null);
+  } = useUrlTable(urls);
+  const [selectedUrl, setSelectedUrl] = useState<null | UrlAnalysis>(null);
+  const [newUrl, setNewUrl] = useState('');
+
+  const addUrlMutation = useMutation({
+    mutationFn: async (newUrl: string) => {
+      const res = await fetch('http://localhost:8080/urls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: newUrl }),
+      });
+      if (!res.ok) throw new Error(messages.addError);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['urls'] });
+    },
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-8">{messages.loading}</div>;
+  }
+  if (isError) {
+    return <div className="text-center py-8 text-red-500">{messages.loadingError}</div>;
+  }
 
   return (
     <div className="min-h-screen text-gray-100">
       <h1 className="text-2xl font-bold mb-4 text-white">{messages.dashboardTitle}</h1>
       <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder={messages.enterUrl}
+          className="p-2 border border-gray-700 bg-gray-800 text-gray-100 rounded w-full max-w-md transition-all duration-200 focus:border-blue-500"
+          value={newUrl}
+          onChange={(e) => setNewUrl(e.target.value)}
+        />
         <button
           className="bg-green-700 hover:bg-green-600 active:bg-green-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
-          onClick={handleStart}
-          disabled={selectedIds.length === 0}
+          onClick={() => {
+            addUrlMutation.mutate(newUrl);
+            setNewUrl('');
+          }}
+          disabled={!newUrl}
         >
           {messages.start}
         </button>
         <button
           className="bg-yellow-700 hover:bg-yellow-600 active:bg-yellow-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
-          onClick={handleStop}
-          disabled={selectedIds.length === 0}
+          onClick={() => {}}
         >
           {messages.stop}
         </button>
       </div>
-      <input
-        type="text"
-        placeholder={messages.searchPlaceholder}
-        className="mb-4 p-2 border border-gray-700 bg-gray-800 text-gray-100 rounded w-full max-w-md transition-all duration-200 focus:border-blue-500"
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
-      />
+
       <div className="grid grid-cols-7 gap-2 mb-2">
-        {columns.map((col) =>
-          col.filterType === 'select' ? (
-            <select
-              key={col.key}
-              className="p-1 border border-gray-700 bg-gray-800 text-gray-100 rounded transition-all duration-200 focus:border-blue-500"
-              value={(filters as Record<string, string>)[col.key]}
-              onChange={(e) => {
-                setFilters((f) => ({ ...f, [col.key]: e.target.value }));
-                setPage(1);
-              }}
-            >
-              {statusOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              key={col.key}
-              type={col.filterType}
-              className="p-1 border border-gray-700 bg-gray-800 text-gray-100 rounded transition-all duration-200 focus:border-blue-500"
-              placeholder={col.placeholder}
-              value={(filters as Record<string, string>)[col.key]}
-              onChange={(e) => {
-                setFilters((f) => ({ ...f, [col.key]: e.target.value }));
-                setPage(1);
-              }}
-            />
-          )
-        )}
+        {columns.length > 0 &&
+          columns.map((col) =>
+            col.filterType === 'select' ? (
+              <select
+                key={col.key}
+                className="p-1 border border-gray-700 bg-gray-800 text-gray-100 rounded transition-all duration-200 focus:border-blue-500"
+                value={(filters as Record<string, string>)[col.key]}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, [col.key]: e.target.value }));
+                  setPage(1);
+                }}
+              >
+                {statusOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                key={col.key}
+                type={col.filterType}
+                className="p-1 border border-gray-700 bg-gray-800 text-gray-100 rounded transition-all duration-200 focus:border-blue-500"
+                placeholder={col.placeholder}
+                value={(filters as Record<string, string>)[col.key]}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, [col.key]: e.target.value }));
+                  setPage(1);
+                }}
+              />
+            )
+          )}
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-gray-800 rounded shadow transition-all duration-200">
@@ -125,7 +152,7 @@ export const UrlDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {paginated.map((u) => (
+            {paginated?.map((u) => (
               <tr
                 key={u.id}
                 className="border-t border-gray-700 hover:bg-gray-700 transition-all duration-200 cursor-pointer"
@@ -173,12 +200,12 @@ export const UrlDashboard = () => {
           {messages.prev}
         </button>
         <span>
-          {messages.page} {page} {messages.of} {totalPages}
+          {messages.page} {page} {messages.of} {totalPages || 1}
         </span>
         <button
           className="px-3 py-1 rounded bg-gray-700 hover:bg-gray-600 active:bg-gray-800 text-gray-100 transition-all duration-200 disabled:opacity-50"
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          disabled={page === totalPages}
+          onClick={() => setPage((p) => Math.min(totalPages || 1, p + 1))}
+          disabled={page === totalPages || !totalPages}
         >
           {messages.next}
         </button>

@@ -2,7 +2,7 @@ export const messages = {
   dashboardTitle: 'URL Analysis Dashboard',
   start: 'Start',
   stop: 'Stop',
-  searchPlaceholder: 'Search URLs or Titles...',
+  enterUrl: 'Enter URL to analyze',
   filterUrl: 'Filter URL',
   filterTitle: 'Filter Title',
   filterHtml: 'Filter HTML',
@@ -22,4 +22,8 @@ export const messages = {
   modalNoBrokenLinks: 'No broken links found.',
   modalInternalLinks: 'Internal Links',
   modalExternalLinks: 'External Links',
+  loading: 'Loading...',
+  addError: 'Failed to add URL',
+  addSuccess: 'URL added successfully',
+  loadingError: 'Error loading data',
 };

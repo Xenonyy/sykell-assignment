@@ -1,9 +1,9 @@
 import { useUrlTable } from '../../hooks/useUrlTable';
 import { messages } from '../../messages';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { UrlDetailsModal } from './UrlDetailsModal';
 import type { UrlAnalysis } from '../../types/UrlAnalysis';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFetchUrls } from '../../hooks/useFetchUrls';
 
 const columns = [

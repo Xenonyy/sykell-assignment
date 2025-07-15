@@ -26,4 +26,10 @@ export const messages = {
   addError: 'Failed to add URL',
   addSuccess: 'URL added successfully',
   loadingError: 'Error loading data',
+  deleteError: 'Failed to delete URLs',
+  deleteSuccess: 'URLs deleted successfully',
+  reanalyzeError: 'Failed to re-analyze URLs',
+  reanalyzeSuccess: 'URLs re-analyzed successfully',
+  invalidUrl: 'Please enter a valid URL (must start with http:// or https://)',
+  fetchError: 'Failed to fetch URLs',
 };

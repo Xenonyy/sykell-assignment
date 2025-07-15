@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -8,23 +9,46 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func crawlURL(targetURL string) URLAnalysis {
-	resp, err := http.Get(targetURL)
-	if err != nil || resp.StatusCode >= 400 {
+func crawlURL(targetURL string) (URLAnalysis, string) {
+	parsed, err := url.ParseRequestURI(targetURL)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		brokenLinks := []BrokenLink{{URL: targetURL, Status: 0}}
+		brokenLinksJSON, _ := json.Marshal(brokenLinks)
 		return URLAnalysis{
 			URL:         targetURL,
 			Status:      "error",
-			BrokenLinks: []BrokenLink{{URL: targetURL, Status: resp.StatusCode}},
-		}
+			BrokenLinks: brokenLinks,
+		}, string(brokenLinksJSON)
+	}
+
+	resp, err := http.Get(targetURL)
+	if err != nil {
+		brokenLinks := []BrokenLink{{URL: targetURL, Status: 0}}
+		brokenLinksJSON, _ := json.Marshal(brokenLinks)
+		return URLAnalysis{
+			URL:         targetURL,
+			Status:      "error",
+			BrokenLinks: brokenLinks,
+		}, string(brokenLinksJSON)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		brokenLinks := []BrokenLink{{URL: targetURL, Status: resp.StatusCode}}
+		brokenLinksJSON, _ := json.Marshal(brokenLinks)
+		return URLAnalysis{
+			URL:         targetURL,
+			Status:      "error",
+			BrokenLinks: brokenLinks,
+		}, string(brokenLinksJSON)
+	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return URLAnalysis{
 			URL:    targetURL,
 			Status: "error",
-		}
+		}, ""
 	}
 
 	htmlVersion := detectHTMLVersion(resp)
@@ -69,6 +93,8 @@ func crawlURL(targetURL string) URLAnalysis {
 		}
 	})
 
+	brokenLinksJSON, _ := json.Marshal(brokenLinks)
+
 	return URLAnalysis{
 		URL:           targetURL,
 		HTMLVersion:   htmlVersion,
@@ -79,7 +105,7 @@ func crawlURL(targetURL string) URLAnalysis {
 		BrokenLinks:   brokenLinks,
 		HasLoginForm:  hasLogin,
 		Status:        "done",
-	}
+	}, string(brokenLinksJSON)
 }
 
 func headingsToString(h map[string]int) string {

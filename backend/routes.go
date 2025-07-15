@@ -13,6 +13,7 @@ func RegisterRoutes(router *gin.Engine) {
 	router.GET("/urls", listURLs)
 	router.GET("/urls/:id", getURL)
 	router.POST("/urls/start", startURLs)
+	router.POST("/urls/delete", deleteURLs)
 }
 
 func addURL(c *gin.Context) {
@@ -132,7 +133,30 @@ func startURLs(c *gin.Context) {
 		return
 	}
 
-	query := "UPDATE url_analysis SET status = 'running' WHERE id IN (?" + strings.Repeat(",?", len(input.IDs)-1) + ")"
+	query := "UPDATE url_analysis SET status = 'queued' WHERE id IN (?" + strings.Repeat(",?", len(input.IDs)-1) + ")"
+	args := make([]interface{}, len(input.IDs))
+	for i, id := range input.IDs {
+		args[i] = id
+	}
+	_, err := db.Exec(query, args...)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
+}
+
+func deleteURLs(c *gin.Context) {
+	var input struct {
+		IDs []int `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil || len(input.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	query := "DELETE FROM url_analysis WHERE id IN (?" + strings.Repeat(",?", len(input.IDs)-1) + ")"
 	args := make([]interface{}, len(input.IDs))
 	for i, id := range input.IDs {
 		args[i] = id

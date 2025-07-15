@@ -48,6 +48,7 @@ export const useUrlTable = (analyses: UrlAnalysis[]) => {
 
   return {
     selectedIds,
+    setSelectedIds,
     handleSelect,
     search,
     setSearch,

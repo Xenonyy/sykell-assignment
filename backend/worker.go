@@ -21,13 +21,13 @@ func startBackgroundWorker(db *sql.DB) {
 		}
 
 		log.Printf("Crawling: %s (id=%d)\n", url, id)
-		result := crawlURL(url)
+		result, brokenLinksJSON := crawlURL(url)
 
 		_, err = db.Exec(`UPDATE url_analysis SET 
 			html_version = ?, title = ?, headings = ?, internal_links = ?, external_links = ?, broken_links = ?, has_login_form = ?, status = 'done'
 			WHERE id = ?`,
 			result.HTMLVersion, result.Title, result.Headings, result.InternalLinks,
-			result.ExternalLinks, result.BrokenLinks, result.HasLoginForm, id,
+			result.ExternalLinks, brokenLinksJSON, result.HasLoginForm, id,
 		)
 		if err != nil {
 			log.Println("Worker update error:", err)

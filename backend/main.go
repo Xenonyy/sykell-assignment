@@ -15,6 +15,7 @@ func main() {
 	godotenv.Load()
 	gin.SetMode(gin.ReleaseMode)
 	db = ConnectDB()
+	go startBackgroundWorker(db)
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{

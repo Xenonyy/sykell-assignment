@@ -40,17 +40,21 @@ const UrlDetailsModalComponent = ({ url, onClose }: UrlDetailsModalProps) => {
         </div>
         <div>
           <h3 className="font-semibold mb-2">{messages.modalBrokenLinksTitle}</h3>
-          {url.brokenLinks.length === 0 ? (
-            <div className="text-white">{messages.modalNoBrokenLinks}</div>
+          {Array.isArray(url.brokenLinks) ? (
+            url.brokenLinks.length === 0 ? (
+              <div className="text-white">{messages.modalNoBrokenLinks}</div>
+            ) : (
+              <ul className="list-disc pl-5">
+                {url.brokenLinks.map((link) => (
+                  <li key={link.url}>
+                    <span className="text-blue-400 pr-1">{link.url}</span>
+                    <span className="text-red-400">({link.status})</span>
+                  </li>
+                ))}
+              </ul>
+            )
           ) : (
-            <ul className="list-disc pl-5">
-              {url.brokenLinks.map((link) => (
-                <li key={link.url}>
-                  <span className="text-blue-400 pr-1">{link.url}</span>
-                  <span className="text-red-400">({link.status})</span>
-                </li>
-              ))}
-            </ul>
+            <div className="text-white">{url.brokenLinks || messages.modalNoBrokenLinks}</div>
           )}
         </div>
       </div>

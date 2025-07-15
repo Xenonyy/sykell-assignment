@@ -31,6 +31,7 @@ export const UrlDashboard = () => {
 
   const {
     selectedIds,
+    setSelectedIds,
     handleSelect,
     sortKey,
     setSortKey,
@@ -45,6 +46,25 @@ export const UrlDashboard = () => {
   } = useUrlTable(urls);
   const [selectedUrl, setSelectedUrl] = useState<null | UrlAnalysis>(null);
   const [newUrl, setNewUrl] = useState('');
+  const [urlError, setUrlError] = useState('');
+
+  const isValidUrl = (url: string) => {
+    try {
+      const u = new URL(url);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewUrl(e.target.value);
+    if (e.target.value === '' || isValidUrl(e.target.value)) {
+      setUrlError('');
+    } else {
+      setUrlError(messages.invalidUrl);
+    }
+  };
 
   const addUrlMutation = useMutation({
     mutationFn: async (newUrl: string) => {
@@ -60,6 +80,44 @@ export const UrlDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['urls'] });
     },
   });
+
+  const deleteUrlsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await fetch('http://localhost:8080/urls/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error(messages.deleteError);
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['urls'] }),
+  });
+
+  const startUrlsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await fetch('http://localhost:8080/urls/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error(messages.reanalyzeError);
+      return res.json();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['urls'] }),
+  });
+
+  const handleDelete = async () => {
+    const ids = selectedIds.map(Number);
+    await deleteUrlsMutation.mutateAsync(ids);
+    setSelectedIds([]);
+  };
+
+  const handleReanalyze = async () => {
+    const ids = selectedIds.map(Number);
+    await startUrlsMutation.mutateAsync(ids);
+    setSelectedIds([]);
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">{messages.loading}</div>;
@@ -77,7 +135,7 @@ export const UrlDashboard = () => {
           placeholder={messages.enterUrl}
           className="p-2 border border-gray-700 bg-gray-800 text-gray-100 rounded w-full max-w-md transition-all duration-200 focus:border-blue-500"
           value={newUrl}
-          onChange={(e) => setNewUrl(e.target.value)}
+          onChange={handleInputChange}
         />
         <button
           className="bg-green-700 hover:bg-green-600 active:bg-green-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
@@ -85,17 +143,33 @@ export const UrlDashboard = () => {
             addUrlMutation.mutate(newUrl);
             setNewUrl('');
           }}
-          disabled={!newUrl}
+          disabled={!newUrl || !!urlError || !isValidUrl(newUrl)}
         >
           {messages.start}
         </button>
         <button
           className="bg-yellow-700 hover:bg-yellow-600 active:bg-yellow-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
           onClick={() => {}}
+          disabled={selectedIds.length === 0}
         >
           {messages.stop}
         </button>
+        <button
+          className="bg-blue-700 hover:bg-blue-600 active:bg-blue-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
+          onClick={handleReanalyze}
+          disabled={selectedIds.length === 0 || startUrlsMutation.isPending}
+        >
+          Reanalyze
+        </button>
+        <button
+          className="bg-red-700 hover:bg-red-600 active:bg-red-800 text-white px-3 py-1 rounded transition-all duration-200 disabled:opacity-50"
+          onClick={handleDelete}
+          disabled={selectedIds.length === 0 || deleteUrlsMutation.isPending}
+        >
+          Delete
+        </button>
       </div>
+      {urlError && <div className="text-red-400 mb-2">{urlError}</div>}
 
       <div className="grid grid-cols-7 gap-2 mb-2">
         {columns.length > 0 &&

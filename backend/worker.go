@@ -20,6 +20,12 @@ func startBackgroundWorker(db *sql.DB) {
 			continue
 		}
 
+		_, err = db.Exec(`UPDATE url_analysis SET status = 'running' WHERE id = ?`, id)
+		if err != nil {
+			log.Println("Failed to set status to running:", err)
+			continue
+		}
+
 		log.Printf("Crawling: %s (id=%d)\n", url, id)
 		result, brokenLinksJSON := crawlURL(url)
 

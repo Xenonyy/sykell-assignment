@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: sykell_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: sykell
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+      - '3306:3306'
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

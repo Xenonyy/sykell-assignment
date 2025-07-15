@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,6 +11,7 @@ func RegisterRoutes(router *gin.Engine) {
 	router.POST("/urls", addURL)
 	router.GET("/urls", listURLs)
 	router.GET("/urls/:id", getURL)
+	router.POST("/urls/start", startURLs)
 }
 
 func addURL(c *gin.Context) {
@@ -42,7 +44,7 @@ func listURLs(c *gin.Context) {
 
 	var urls []URLAnalysis
 	for rows.Next() {
-		var u URLAnalysis
+		var u URLAnalysisDB
 		err := rows.Scan(
 			&u.ID,
 			&u.URL,
@@ -59,7 +61,18 @@ func listURLs(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
 			return
 		}
-		urls = append(urls, u)
+		urls = append(urls, URLAnalysis{
+			ID:            u.ID,
+			URL:           u.URL,
+			Status:        u.Status,
+			HTMLVersion:   u.HTMLVersion.String,
+			Title:         u.Title.String,
+			Headings:      u.Headings.String,
+			InternalLinks: int(u.InternalLinks.Int64),
+			ExternalLinks: int(u.ExternalLinks.Int64),
+			BrokenLinks:   u.BrokenLinks.String,
+			HasLoginForm:  u.HasLoginForm.Bool,
+		})
 	}
 	c.JSON(http.StatusOK, urls)
 }
@@ -89,4 +102,27 @@ func getURL(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, u)
+}
+
+func startURLs(c *gin.Context) {
+	var input struct {
+		IDs []int `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil || len(input.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	query := "UPDATE url_analysis SET status = 'running' WHERE id IN (?" + strings.Repeat(",?", len(input.IDs)-1) + ")"
+	args := make([]interface{}, len(input.IDs))
+	for i, id := range input.IDs {
+		args[i] = id
+	}
+	_, err := db.Exec(query, args...)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "DB error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
